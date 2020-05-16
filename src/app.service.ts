@@ -5,7 +5,7 @@ import { data } from './hourly.json';
 
 @Injectable()
 export class AppService {
-  getHello(): any {
+  v1(): any {
     const start = new Date().getTime();
 
     const groupedByDate: { [day: string]: any[] } =
@@ -25,7 +25,8 @@ export class AppService {
 
     const result = {
       length: data.length,
-      processingTime: new Date().getTime() - start,
+      memoryUsed: `${_.round(process.memoryUsage().heapUsed / 1024 / 1024, 2)}Mb`,
+      processingTime: `${new Date().getTime() - start}ms`,
       averageTemperaturesByDate,
     };
     return result;
