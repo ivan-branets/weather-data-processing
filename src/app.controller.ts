@@ -29,4 +29,9 @@ export class AppController {
   v5(): string {
     return this.appService.v5();
   }
+
+  @Get('/v6')
+  v6(): string {
+    return this.appService.v6();
+  }
 }

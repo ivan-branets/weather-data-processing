@@ -9,37 +9,34 @@ export class AppService {
   v1(): any {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: any[] } = {};
-    const list = data.map(item => ({
+    const source = data.map(item => ({
       ...item,
       date: moment(item.time).format('YYYY-MM-DD')
     }));
 
-    while (list.length > 0) {
-      const currDate = list[0].date;
+    const groupedByDate: { date: string, array: any[] }[] = [];
 
-      groupedByDate[currDate] = [list[0]];
-      list.splice(0, 1);
+    while (source.length > 0) {
+      const item = source[0];
+      const match = groupedByDate.find(itemToFind => itemToFind.date === item.date);
 
-      for (let i = 0; i < list.length; i++) {
-        const otherDate =list[i].date;
-
-        if (currDate === otherDate) {
-          groupedByDate[currDate].push(list[i]);
-
-          list.splice(i, 1);
-          i--;
-        }
+      if (match) {
+        match.array.push(item);
+      } else {
+        groupedByDate.push({
+          date: item.date,
+          array: [item]
+        })
       }
+
+      source.splice(0, 1);
     }
 
-    const dates = Object.keys(groupedByDate);
     const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
-      dates.map(date => {
-        const temperaturesInOneDay = groupedByDate[date];
+      groupedByDate.map(item => {
         return {
-          date,
-          meanTemperature: _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+          date: item.date,
+          meanTemperature: _.sumBy(item.array, item => item.temperature) / item.array.length
         }
       })
 
@@ -49,34 +46,61 @@ export class AppService {
   v2(): any {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: any[] } = {};
-    const list = data.map(item => ({
+    const source = data.map(item => ({
       ...item,
-      date: moment(item.time).format('YYYY-MM-DD')
+      date: item.time.substring(0, 10)
     }));
 
-    for (let i = 0; i < list.length; i++) {
-      if (list[i] === null) {
-        continue;
+    const groupedByDate: { date: string, array: any[] }[] = [];
+
+    while (source.length > 0) {
+      const item = source[0];
+      const match = groupedByDate.find(itemToFind => itemToFind.date === item.date);
+
+      if (match) {
+        match.array.push(item);
+      } else {
+        groupedByDate.push({
+          date: item.date,
+          array: [item]
+        })
       }
 
-      const currDate = list[i].date;
+      source.splice(0, 1);
+    }
 
-      groupedByDate[currDate] = [list[i]];
-
-      for (let j = i + 1; j < list.length; j++) {
-        if (list[j] === null) {
-          continue;
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      groupedByDate.map(item => {
+        return {
+          date: item.date,
+          meanTemperature: _.sumBy(item.array, item => item.temperature) / item.array.length
         }
+      })
 
-        const otherDate = list[j].date;
+    return new Result(data.length, meanTemperaturesByDate, start);
+  }
 
-        if (currDate === otherDate) {
-          groupedByDate[currDate].push(list[j]);
+  v3(): any {
+    const start = new Date();
 
-          list[j] = null;
-        }
+    const source = data.map(item => ({
+      ...item,
+      date: item.time.substring(0, 10)
+    }));
+
+    const groupedByDate: { [day: string]: any[] } = {};
+
+    while (source.length > 0) {
+      const item = source[0];
+      const match = groupedByDate[item.date];
+
+      if (match) {
+        match.push(item);
+      } else {
+        groupedByDate[item.date] = [item];
       }
+
+      source.splice(0, 1);
     }
 
     const dates = Object.keys(groupedByDate);
@@ -92,13 +116,46 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v3(): any {
+  v4(): any {
+    const start = new Date();
+
+    const source = data.map(item => ({
+      ...item,
+      date: item.time.substring(0, 10)
+    }));
+
+    const groupedByDate: { [day: string]: any[] } = {};
+
+    source.forEach(item => {
+      const match = groupedByDate[item.date];
+
+      if (match) {
+        match.push(item);
+      } else {
+        groupedByDate[item.date] = [item];
+      }
+    });
+
+    const dates = Object.keys(groupedByDate);
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      dates.map(date => {
+        const temperaturesInOneDay = groupedByDate[date];
+        return {
+          date,
+          meanTemperature: _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+        }
+      })
+
+    return new Result(data.length, meanTemperaturesByDate, start);
+  }
+
+  v5(): any {
     const start = new Date();
 
     const groupedByDate: { [day: string]: any[] } = {};
 
     data.forEach(item => {
-      const date = moment(item.time).format('YYYY-MM-DD');
+      const date = item.time.substring(0, 10);
 
       groupedByDate[date] = groupedByDate[date] || [];
       groupedByDate[date].push(item);
@@ -117,27 +174,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v4(): any {
-    const start = new Date();
-
-    const groupedByDate: { [day: string]: any[] } =
-      _.groupBy(data, item => moment(item.time).format('YYYY-MM-DD'));
-
-    const dates = Object.keys(groupedByDate);
-
-    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
-      dates.map(date => {
-        const temperaturesInOneDay = groupedByDate[date];
-        return {
-          date,
-          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
-        }
-      })
-
-    return new Result(data.length, meanTemperaturesByDate, start);
-  }
-
-  v5(): any {
+  v6(): any {
     const start = new Date();
 
     const groupedByDate: { [day: string]: any[] } =
