@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 import _ from 'lodash';
 import { data } from './hourly.json';
-import { Result } from './result';
+import { IWearerItem, Result } from './models';
 
 @Injectable()
 export class AppService {
-  v1(): any {
+  v1(): Result {
     const start = new Date();
 
     const source = data.map(item => ({
@@ -14,7 +14,7 @@ export class AppService {
       date: moment(item.time).format('YYYY-MM-DD')
     }));
 
-    const groupedByDate: { date: string, array: any[] }[] = [];
+    const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
 
     while (source.length > 0) {
       const item = source[0];
@@ -43,7 +43,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v2(): any {
+  v2(): Result {
     const start = new Date();
 
     const source = data.map(item => ({
@@ -51,7 +51,7 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { date: string, array: any[] }[] = [];
+    const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
 
     while (source.length > 0) {
       const item = source[0];
@@ -80,7 +80,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v3(): any {
+  v3(): Result {
     const start = new Date();
 
     const source = data.map(item => ({
@@ -116,7 +116,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v4(): any {
+  v4(): Result {
     const start = new Date();
 
     const source = data.map(item => ({
@@ -124,7 +124,7 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { [day: string]: any[] } = {};
+    const groupedByDate: { [day: string]: IWearerItem[] } = {};
 
     source.forEach(item => {
       const match = groupedByDate[item.date];
@@ -149,10 +149,10 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v5(): any {
+  v5(): Result {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: any[] } = {};
+    const groupedByDate: { [day: string]: IWearerItem[] } = {};
 
     data.forEach(item => {
       const date = item.time.substring(0, 10);
@@ -174,10 +174,10 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
-  v6(): any {
+  v6(): Result {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: any[] } =
+    const groupedByDate: { [day: string]: IWearerItem[] } =
       _.groupBy(data, item => item.time.substring(0, 10));
 
     const dates = Object.keys(groupedByDate);
