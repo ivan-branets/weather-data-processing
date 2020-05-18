@@ -1,0 +1,11 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 1
+      arrivalRate: 1000
+scenarios:
+  - flow:
+    - loop:
+      - get:
+          url: "/{{ api-version }}"
+      count: 5
