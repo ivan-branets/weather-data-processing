@@ -64,6 +64,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
+  // the same as v1, but avoiding moment()
   v2(): Result {
     const start = new Date();
 
