@@ -6,32 +6,52 @@ import { IWearerItem, Result } from './models';
 
 @Injectable()
 export class AppService {
+
+  // 1. add date field to every item
+  // 2. group items by date in a list
+  // 3. count mean temperature for items with the same date
   v1(): Result {
+    // record start time to know how much time we've spent for data processing    
     const start = new Date();
 
+    // we have a time field '2019-01-01 00:10:00'.
+    // to make a grouping by date why need to cut '00:10:00' part, so leave only date.
+    // let's add a new field 'date' and write this value there
     const source = data.map(item => ({
       ...item,
       date: moment(item.time).format('YYYY-MM-DD')
     }));
 
+    // in this collection we store items with the same date
     const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
 
+    // take the first element, process it, and remove from the collection
+    // stop processing once collection is empty
     while (source.length > 0) {
       const item = source[0];
+
+      // check if we already have found items with date of the current element
       const match = groupedByDate.find(itemToFind => itemToFind.date === item.date);
 
+      // if found
       if (match) {
+        // add the current element to the array, which has elements with the same date
         match.array.push(item);
+
+        // otherwise (if no elements with the date we are looking for)
       } else {
+        // add new grouping with the current date
         groupedByDate.push({
           date: item.date,
           array: [item]
         })
       }
 
+      // remove the first element, so we can process the next one on the following step
       source.splice(0, 1);
     }
 
+    // count mean temperature for items with the same date
     const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
       groupedByDate.map(item => {
         return {
