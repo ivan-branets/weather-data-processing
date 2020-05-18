@@ -56,7 +56,8 @@ export class AppService {
       groupedByDate.map(item => {
         return {
           date: item.date,
-          meanTemperature: _.sumBy(item.array, item => item.temperature) / item.array.length
+          meanTemperature:
+            _.sumBy(item.array, item => item.temperature) / item.array.length
         }
       })
 
@@ -68,6 +69,8 @@ export class AppService {
 
     const source = data.map(item => ({
       ...item,
+      // date: moment(item.time).format('YYYY-MM-DD')
+      // replace moment, since it decrease performance significantly
       date: item.time.substring(0, 10)
     }));
 
