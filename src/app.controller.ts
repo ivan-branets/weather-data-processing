@@ -1,37 +1,38 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Result } from './models';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('/v1')
-  v1(): string {
+  v1(): Result {
     return this.appService.v1();
   }
 
   @Get('/v2')
-  v2(): string {
+  v2(): Result {
     return this.appService.v2();
   }
 
   @Get('/v3')
-  v3(): string {
+  v3(): Result {
     return this.appService.v3();
   }
 
   @Get('/v4')
-  v4(): string {
+  v4(): Result {
     return this.appService.v4();
   }
 
   @Get('/v5')
-  v5(): string {
+  v5(): Result {
     return this.appService.v5();
   }
 
   @Get('/v6')
-  v6(): string {
+  v6(): Result {
     return this.appService.v6();
   }
 }
