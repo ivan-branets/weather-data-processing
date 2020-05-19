@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 import _ from 'lodash';
 import { data } from './hourly.json';
-import { IWearerItem, Result } from './models';
+import { IWeatherItem, Result } from './models';
 
 @Injectable()
 export class AppService {
@@ -23,7 +23,7 @@ export class AppService {
     }));
 
     // in this collection we store items with the same date
-    const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
+    const groupedByDate: { date: string, array: IWeatherItem[] }[] = [];
 
     // take the first element, process it, and remove from the collection
     // stop processing once collection is empty
@@ -75,7 +75,7 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
+    const groupedByDate: { date: string, array: IWeatherItem[] }[] = [];
 
     while (source.length > 0) {
       const item = source[0];
@@ -113,9 +113,9 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    // was: const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
+    // was: const groupedByDate: { date: string, array: IWeatherItem[] }[] = [];
     // hashmap instead of list
-    const groupedByDate: { [date: string]: any[] } = {};
+    const groupedByDate: { [date: string]: IWeatherItem[] } = {};
 
     while (source.length > 0) {
       const item = source[0];
@@ -152,6 +152,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
+  // the same as v3, but no element removing in source list
   v4(): Result {
     const start = new Date();
 
@@ -160,8 +161,9 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { [date: string]: IWearerItem[] } = {};
+    const groupedByDate: { [date: string]: IWeatherItem[] } = {};
 
+    // was: while (source.length > 0) {
     source.forEach(item => {
       const match = groupedByDate[item.date];
 
@@ -170,6 +172,9 @@ export class AppService {
       } else {
         groupedByDate[item.date] = [item];
       }
+
+      // was: source.splice(0, 1);
+      // remove element from the list is an expensive operation
     });
 
     const dates = Object.keys(groupedByDate);
@@ -188,7 +193,7 @@ export class AppService {
   v5(): Result {
     const start = new Date();
 
-    const groupedByDate: { [date: string]: IWearerItem[] } = {};
+    const groupedByDate: { [date: string]: IWeatherItem[] } = {};
 
     data.forEach(item => {
       const date = item.time.substring(0, 10);
@@ -213,7 +218,7 @@ export class AppService {
   v6(): Result {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: IWearerItem[] } =
+    const groupedByDate: { [day: string]: IWeatherItem[] } =
       _.groupBy(data, item => item.time.substring(0, 10));
 
     const dates = Object.keys(groupedByDate);
