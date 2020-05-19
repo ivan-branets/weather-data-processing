@@ -139,8 +139,10 @@ export class AppService {
       source.splice(0, 1);
     }
 
+    // get all dates
     const dates = Object.keys(groupedByDate);
     const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      // for every date get mean temperature
       dates.map(date => {
         const temperaturesInOneDay = groupedByDate[date];
         return {
