@@ -193,15 +193,36 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
+  // in v4 we didn't mutate source collection
+  // it is redundant now
+  // let get item from original data collection
   v5(): Result {
     const start = new Date();
 
-    const groupedByDate: { [date: string]: IWeatherItem[] } = {};
+    // was:
+    // const source = data.map(item => ({
+    //  ...item,
+    //  date: item.time.substring(0, 10)
+    // }));
 
+    const groupedByDate: { [date: string]: IWeatherItem[] } = {};
+    
+    // was: source.forEach(item => {
     data.forEach(item => {
       const date = item.time.substring(0, 10);
 
-      groupedByDate[date] = groupedByDate[date] || [];
+      // was:
+      // const match = groupedByDate[item.date];
+
+      // if (match) {
+      //  match.push(item);
+      // } else {
+      //   groupedByDate[item.date] = [item];
+      // }
+
+      // less code
+
+      groupedByDate[date] = groupedByDate[date] || []; // if groupedByDate[date] is undefined, set an empty array
       groupedByDate[date].push(item);
     })
 
