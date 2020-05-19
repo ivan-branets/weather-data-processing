@@ -195,7 +195,7 @@ export class AppService {
 
   // in v4 we didn't mutate source collection
   // it is redundant now
-  // let get item from original data collection
+  // let get items from original data collection
   v5(): Result {
     const start = new Date();
 

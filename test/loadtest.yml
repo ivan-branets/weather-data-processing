@@ -7,5 +7,5 @@ scenarios:
   - flow:
     - loop:
       - get:
-          url: "/v2"
-      count: 5
+          url: "/v6"
+      count: 10

@@ -13,7 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "start:cluster": "pm2 start -i max dist/main.js --name temperature-api",
+    "start:cluster": "pm2 start -i 2 dist/main.js --name temperature-api",
     "stop:cluster": "pm2 stop temperature-api && pm2 delete temperature-api",
     "monitor": "pm2 monit",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
