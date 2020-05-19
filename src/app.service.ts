@@ -221,8 +221,8 @@ export class AppService {
       // }
 
       // less code
-
-      groupedByDate[date] = groupedByDate[date] || []; // if groupedByDate[date] is undefined, set an empty array
+      // if groupedByDate[date] is not undefined, set self, otherwise set an empty array
+      groupedByDate[date] = groupedByDate[date] || []; 
       groupedByDate[date].push(item);
     })
 
