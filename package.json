@@ -22,7 +22,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "loadtest": "artillery run -v '{ \"api-version\": [\"v6\"] }' ./test/loadtest.yml",
+    "loadtest": "artillery run ./test/loadtest.yml",
     "build:docker": "docker build -t weather-data-processing .",
     "run:docker": "docker run -p 3000:3000 weather-data-processing"
   },

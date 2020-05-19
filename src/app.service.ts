@@ -120,7 +120,8 @@ export class AppService {
     while (source.length > 0) {
       const item = source[0];
 
-      // with hashmap we avoid groupedByDate.find(itemToFind => itemToFind.date === item.date);
+      // was:
+      // const match = groupedByDate.find(itemToFind => itemToFind.date === item.date);
       // search O(1) instead of O(n)
       const match = groupedByDate[item.date];
 
