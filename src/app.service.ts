@@ -147,7 +147,8 @@ export class AppService {
         const temperaturesInOneDay = groupedByDate[date];
         return {
           date,
-          meanTemperature: _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+          meanTemperature:
+            _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
         }
       })
 
