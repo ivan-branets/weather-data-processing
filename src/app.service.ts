@@ -239,8 +239,19 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
+  // the same as v5, but grouping and mean is done by lodash library
   v6(): Result {
     const start = new Date();
+
+    // was:
+    // const groupedByDate: { [date: string]: IWeatherItem[] } = {};
+    
+    // data.forEach(item => {
+    //   const date = item.time.substring(0, 10);
+
+    //   groupedByDate[date] = groupedByDate[date] || []; 
+    //   groupedByDate[date].push(item);
+    // })
 
     const groupedByDate: { [day: string]: IWeatherItem[] } =
       _.groupBy(data, item => item.time.substring(0, 10));
@@ -252,7 +263,9 @@ export class AppService {
         const temperaturesInOneDay = groupedByDate[date];
         return {
           date,
-          meanTemperature: _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+          // was:
+          // _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
         }
       })
 
