@@ -70,7 +70,7 @@ export class AppService {
 
     const source = data.map(item => ({
       ...item,
-      // date: moment(item.time).format('YYYY-MM-DD')
+      // was: date: moment(item.time).format('YYYY-MM-DD')
       // replace moment, since it decrease performance significantly
       date: item.time.substring(0, 10)
     }));
@@ -104,6 +104,7 @@ export class AppService {
     return new Result(data.length, meanTemperaturesByDate, start);
   }
 
+  // the same as v2, but hashmap instead of list
   v3(): Result {
     const start = new Date();
 
@@ -112,15 +113,25 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { [day: string]: any[] } = {};
+    // was: const groupedByDate: { date: string, array: IWearerItem[] }[] = [];
+    // hashmap instead of list
+    const groupedByDate: { [date: string]: any[] } = {};
 
     while (source.length > 0) {
       const item = source[0];
+
+      // with hashmap we avoid groupedByDate.find(itemToFind => itemToFind.date === item.date);
+      // search O(1) instead of O(n)
       const match = groupedByDate[item.date];
 
       if (match) {
         match.push(item);
       } else {
+        // was:
+        // groupedByDate.push({
+        //  date: item.date,
+        //  array: [item]
+        // })
         groupedByDate[item.date] = [item];
       }
 
@@ -148,7 +159,7 @@ export class AppService {
       date: item.time.substring(0, 10)
     }));
 
-    const groupedByDate: { [day: string]: IWearerItem[] } = {};
+    const groupedByDate: { [date: string]: IWearerItem[] } = {};
 
     source.forEach(item => {
       const match = groupedByDate[item.date];
@@ -176,7 +187,7 @@ export class AppService {
   v5(): Result {
     const start = new Date();
 
-    const groupedByDate: { [day: string]: IWearerItem[] } = {};
+    const groupedByDate: { [date: string]: IWearerItem[] } = {};
 
     data.forEach(item => {
       const date = item.time.substring(0, 10);
