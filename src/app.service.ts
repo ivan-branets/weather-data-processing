@@ -18,7 +18,7 @@ export class AppService {
     // to make a grouping by date why need to cut '00:10:00' part, so leave only date.
     // let's add a new field 'date' and write this value there
     const source = data.map(item => ({
-      ...item,
+      temperature: item.temperature,
       date: moment(item.time).format('YYYY-MM-DD')
     }));
 
@@ -69,7 +69,7 @@ export class AppService {
     const start = new Date();
 
     const source = data.map(item => ({
-      ...item,
+      temperature: item.temperature,
       // was: date: moment(item.time).format('YYYY-MM-DD')
       // replace moment, since it decrease performance significantly
       date: item.time.substring(0, 10)
@@ -109,7 +109,7 @@ export class AppService {
     const start = new Date();
 
     const source = data.map(item => ({
-      ...item,
+      temperature: item.temperature,
       date: item.time.substring(0, 10)
     }));
 
@@ -160,7 +160,7 @@ export class AppService {
     const start = new Date();
 
     const source = data.map(item => ({
-      ...item,
+      temperature: item.temperature,
       date: item.time.substring(0, 10)
     }));
 
@@ -201,7 +201,7 @@ export class AppService {
 
     // was:
     // const source = data.map(item => ({
-    //  ...item,
+    //  temperature: item.temperature,
     //  date: item.time.substring(0, 10)
     // }));
 
