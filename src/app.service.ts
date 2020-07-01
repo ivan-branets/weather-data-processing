@@ -16,7 +16,7 @@ export class AppService {
 
     // we have a time field '2019-01-01 00:10:00'.
     // to make a grouping by date why need to cut '00:10:00' part, so leave only date.
-    // let's add a new field 'date' and write this value there
+    // let's create a new collection, which contains temperature and date
     const source = data.map(item => ({
       temperature: item.temperature,
       date: moment(item.time).format('YYYY-MM-DD')
