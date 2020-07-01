@@ -7,7 +7,7 @@ import { IWeatherItem, Result } from './models';
 @Injectable()
 export class AppService {
 
-  // 1. add date field to every item
+  // 1. create a new collection, which contains items only with date and temperature
   // 2. group items by date in a list
   // 3. count mean temperature for items with the same date
   v1(): Result {
