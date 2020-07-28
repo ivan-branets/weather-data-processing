@@ -281,6 +281,9 @@ export class AppService {
       }
     });
 
+    const responseTime = new Date().getTime() - start.getTime();
+    await this.timeout(responseTime < 800 ? 800 - responseTime : 0);
+
     const groupedByDate: { [day: string]: IWeatherItem[] } =
       _.groupBy(response.data.data, item => item.time.substring(0, 10));
 
@@ -296,5 +299,11 @@ export class AppService {
       })
 
     return new Result(data.length, meanTemperaturesByDate, start);
+  }
+
+  private timeout(milliseconds: number) {
+    return new Promise(resolve => {
+      setTimeout(resolve, milliseconds);
+    });
   }
 }
