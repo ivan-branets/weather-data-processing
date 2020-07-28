@@ -298,7 +298,7 @@ export class AppService {
         }
       })
 
-    return new Result(data.length, meanTemperaturesByDate, start);
+    return new Result(response.data.data.length, meanTemperaturesByDate, start);
   }
 
   private timeout(milliseconds: number) {
