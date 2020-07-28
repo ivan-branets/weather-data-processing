@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 import _ from 'lodash';
+import axios from 'axios';
 import { data } from './hourly.json';
 import { IWeatherItem, Result } from './models';
 
@@ -265,6 +266,31 @@ export class AppService {
           date,
           // was:
           // _.sumBy(temperaturesInOneDay, item => item.temperature) / temperaturesInOneDay.length
+          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
+        }
+      })
+
+    return new Result(data.length, meanTemperaturesByDate, start);
+  }
+
+  async v7(): Promise<Result> {
+    const start = new Date();
+    const response = await axios.get('https://weather-dou.azureedge.net/weather/hourly.json', {
+      headers: {
+        'Accept-Encoding': 'gzip'
+      }
+    });
+
+    const groupedByDate: { [day: string]: IWeatherItem[] } =
+      _.groupBy(response.data.data, item => item.time.substring(0, 10));
+
+    const dates = Object.keys(groupedByDate);
+
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      dates.map(date => {
+        const temperaturesInOneDay = groupedByDate[date];
+        return {
+          date,
           meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
         }
       })

@@ -35,4 +35,9 @@ export class AppController {
   v6(): Result {
     return this.appService.v6();
   }
+
+  @Get('/v7')
+  v7(): Promise<Result> {
+    return this.appService.v7();
+  }
 }
