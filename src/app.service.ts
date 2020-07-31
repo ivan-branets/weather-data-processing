@@ -281,6 +281,7 @@ export class AppService {
       }
     });
 
+    // mimic slow connection (800ms)
     const responseTime = new Date().getTime() - start.getTime();
     await this.timeout(responseTime < 800 ? 800 - responseTime : 0);
 
