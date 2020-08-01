@@ -41,6 +41,11 @@ export class AppController {
     return this.appService.v7();
   }
 
+  @Get('/v8')
+  v8(): Result {
+    return this.appService.v8();
+  }
+
   @Get('/v9')
   v9(@Query('cityId') cityId): Promise<Result> {
     return this.appService.v9(cityId);

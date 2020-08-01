@@ -341,6 +341,29 @@ export class AppService {
     return new Result(response.data.data.length, meanTemperaturesByDate, start);
   }
 
+  v8(): Result {
+    const start = process.hrtime();
+
+    const aggregated: { [day: string]: { sum: number, count: number } } = {};
+
+    data.map(item => {
+      const date = item.time.substring(0, 10);
+      aggregated[date] || (aggregated[date] = { count: 0, sum: 0 });
+      aggregated[date].sum += item.temperature;
+      aggregated[date].count++;
+    });
+
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] = Object.keys(aggregated).map(date => {
+      const data: { sum: number, count: number } = aggregated[date];
+      return {
+        date,
+        meanTemperature: data.sum / data.count,
+      }
+    });
+
+    return new Result(data.length, meanTemperaturesByDate, start);
+  }
+
   async v9(cityId: string): Promise<Result> {
     if (!this.sqlPool) {
       throw new Error('MySQL is not running. Execute npm run start:docker command');
@@ -438,18 +461,18 @@ export class AppService {
     const arr: ISimpleWeatherItem[] = await this.getInMemoryValue(cityId);
 
     const groupedByDate: { [day: string]: IWeatherItem[] } =
-      _.groupBy(arr, item => item.time.substring(0, 10));
+        _.groupBy(arr, item => item.time.substring(0, 10));
 
     const dates = Object.keys(groupedByDate);
 
     const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
-      dates.map(date => {
-        const temperaturesInOneDay = groupedByDate[date];
-        return {
-          date,
-          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
-        }
-      });
+        dates.map(date => {
+          const temperaturesInOneDay = groupedByDate[date];
+          return {
+            date,
+            meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
+          }
+        });
 
     return new Result(arr.length, meanTemperaturesByDate, start);
   }
