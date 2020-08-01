@@ -3,9 +3,11 @@ services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - "4000:4000"
   redis:
     image: "redis:alpine"
+    ports:
+      - "6379:6379"
   db:
     image: mysql
     command: --default-authentication-plugin=mysql_native_password

@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 import _ from 'lodash';
 import axios from 'axios';
+import mysql from 'mysql';
+import redis from 'redis';
+import zlib from 'zlib';
 import { data } from './hourly.json';
 import { IWeatherItem, Result } from './models';
 
@@ -207,7 +210,7 @@ export class AppService {
     // }));
 
     const groupedByDate: { [date: string]: IWeatherItem[] } = {};
-    
+
     // was: source.forEach(item => {
     data.forEach(item => {
       const date = item.time.substring(0, 10);
@@ -223,7 +226,7 @@ export class AppService {
 
       // less code
       // if groupedByDate[date] is not undefined, set self, otherwise set an empty array
-      groupedByDate[date] = groupedByDate[date] || []; 
+      groupedByDate[date] = groupedByDate[date] || [];
       groupedByDate[date].push(item);
     })
 
@@ -246,7 +249,7 @@ export class AppService {
 
     // was:
     // const groupedByDate: { [date: string]: IWeatherItem[] } = {};
-    
+
     // data.forEach(item => {
     //   const date = item.time.substring(0, 10);
 
@@ -300,6 +303,123 @@ export class AppService {
       })
 
     return new Result(response.data.data.length, meanTemperaturesByDate, start);
+  }
+
+  private readonly pool = mysql.createPool({
+    connectionLimit: 1000,
+    host: process.env.DB_HOST,
+    user: 'root',
+    password: 'example',
+    multipleStatements: true,
+    database: 'weather'
+  });
+
+  async v8(): Promise<Result> {
+    const start = new Date();
+
+    const query = new Promise((resolve, reject) => {
+      this.pool.query(`
+            SELECT time, temperature FROM hourly_statistics
+              WHERE city='city-0';
+          `, (error, result) => {
+        error ? reject(error) : resolve(result);
+      });
+    });
+
+    const sqlResult: any = await query;
+
+    const groupedByDate: { [day: string]: IWeatherItem[] } =
+      _.groupBy(sqlResult, ({ time }) => `${time.getFullYear()}-${time.getMonth() + 1}-${time.getDate()}`);
+
+    const dates = Object.keys(groupedByDate);
+
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      dates.map(date => {
+        const temperaturesInOneDay = groupedByDate[date];
+        return {
+          date,
+          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
+        }
+      })
+
+    return new Result(sqlResult.length, meanTemperaturesByDate, start);
+  }
+
+  async v9(): Promise<Result> {
+    const start = new Date();
+
+    const query = new Promise((resolve, reject) => {
+      this.pool.query(`
+            SELECT date, AVG(temperature) AS meanTemperature FROM
+                (SELECT DATE_FORMAT(time,'%Y-%m-%d') AS date, temperature
+                FROM hourly_statistics
+                WHERE city='city-0') as t
+              GROUP BY date
+          `, (error, result) => {
+        error ? reject(error) : resolve(result);
+      });
+    });
+
+    const sqlResult = await query;
+    return new Result(data.length, sqlResult, start);
+  }
+
+  private readonly client = redis.createClient({
+    host: process.env.REDIS_HOST,
+    return_buffers: true
+  });
+
+  async v10(): Promise<Result> {
+    const start = new Date();
+
+    const get = (key: string) => new Promise<string>((resolve, reject) => {
+      this.client.get(key, (error: Error, reply: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(reply.toString());
+        }
+      });
+    });
+
+    const gunzip = (compressedString: string) => new Promise<string>((resolve, reject) => {
+      const buffer = Buffer.from(compressedString, 'base64');
+
+      zlib.gunzip(buffer, (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result.toString('ascii'));
+        }
+      });
+    });
+
+    const compressedString = await get('city-0');
+
+    console.log('--------------');
+    console.log(new Date().getTime() - start.getTime());
+
+    const value = await gunzip(compressedString);
+    console.log(new Date().getTime() - start.getTime());
+
+    const arr = JSON.parse(value);
+    console.log(new Date().getTime() - start.getTime());
+
+    const groupedByDate: { [day: string]: IWeatherItem[] } =
+      _.groupBy(arr, item => item.time.substring(0, 10));
+
+    const dates = Object.keys(groupedByDate);
+
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      dates.map(date => {
+        const temperaturesInOneDay = groupedByDate[date];
+        return {
+          date,
+          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
+        }
+      })
+
+    return new Result(arr.length, meanTemperaturesByDate, start);
   }
 
   private timeout(milliseconds: number) {

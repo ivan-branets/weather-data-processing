@@ -1,7 +1,11 @@
 import mysql from 'mysql';
+import redis from 'redis';
+import zlib from 'zlib';
 import { data } from '../src/hourly.json';
 
-prefillMySql()
+prefillRedis()
+//prefillMySql()
+  //.then(() => prefillRedis())
   .catch(error => console.error(error))
   .finally(() => console.log('Finished'));
 
@@ -67,12 +71,13 @@ function prefillMySql() {
 
   const insert = (values: string) =>
     new Promise((resolve, reject) => {
+      // INSERT INTO hourly_statistics_no_index (city, time, temperature)
+      // VALUES ${values};
       connection.query(`
           USE weather;
           INSERT INTO hourly_statistics (city, time, temperature)
             VALUES ${values};
-          INSERT INTO hourly_statistics_no_index (city, time, temperature)
-            VALUES ${values};
+
         `, error => {
         if (error) {
           reject(error);
@@ -90,7 +95,7 @@ function prefillMySql() {
           .join(', ');
 
         await insert(values);
-        
+
         if ((i + 1) % 50 === 0) {
           console.log(`${(i + 1) * data.length} items added`);
         }
@@ -112,4 +117,52 @@ function prefillMySql() {
         console.error(error);
       }
     }));
+}
+
+function prefillRedis() {
+  const client = redis.createClient();
+  console.log('Connected to Redis');
+
+  client.on('error', (error: Error) => {
+    console.error(error);
+  });
+
+  const gzip = (value: string) => new Promise<string>((resolve, reject) => {
+    zlib.gzip(value, (error, buffer) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(buffer.toString('base64'));
+      }
+    });
+  });
+
+  const set = (key: string, value: string) => new Promise((resolve, reject) => {
+    client.set(key, value, (error: Error, reply: any) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(reply)
+      }
+    });
+  });
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      for (let i = 0; i < 1000; i++) {
+        const value = await gzip(JSON.stringify(data.map(({ time, temperature }) => ({ time, temperature }))));
+        await set(`city-${i}`, value);
+
+        if ((i + 1) % 50 === 0) {
+          console.log(`${(i + 1) * data.length} items added`);
+        }
+      }
+
+      resolve();
+
+    } catch (error) {
+      reject(error);
+    }
+  })
+    .then(() => client.end(true));
 }

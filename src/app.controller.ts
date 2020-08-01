@@ -40,4 +40,19 @@ export class AppController {
   v7(): Promise<Result> {
     return this.appService.v7();
   }
+
+  @Get('/v8')
+  v8(): Promise<Result> {
+    return this.appService.v8();
+  }
+
+  @Get('/v9')
+  v9(): Promise<Result> {
+    return this.appService.v9();
+  }
+
+  @Get('/v10')
+  v10(): Promise<Result> {
+    return this.appService.v10();
+  }
 }
