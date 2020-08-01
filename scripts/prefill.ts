@@ -1,10 +1,10 @@
 import mysql from 'mysql';
-import redis from 'redis';
+import Redis from 'ioredis';
 import zlib from 'zlib';
 import { data } from '../src/hourly.json';
 
 prefillRedis()
-//prefillMySql()
+  //prefillMySql()
   //.then(() => prefillRedis())
   .catch(error => console.error(error))
   .finally(() => console.log('Finished'));
@@ -120,25 +120,25 @@ function prefillMySql() {
 }
 
 function prefillRedis() {
-  const client = redis.createClient();
+  const client = new Redis();
   console.log('Connected to Redis');
 
   client.on('error', (error: Error) => {
     console.error(error);
   });
 
-  const gzip = (value: string) => new Promise<string>((resolve, reject) => {
+  const gzip = (value: string) => new Promise<Buffer>((resolve, reject) => {
     zlib.gzip(value, (error, buffer) => {
       if (error) {
         reject(error);
       } else {
-        resolve(buffer.toString('base64'));
+        resolve(buffer);
       }
     });
   });
 
-  const set = (key: string, value: string) => new Promise((resolve, reject) => {
-    client.set(key, value, (error: Error, reply: any) => {
+  const set = (key: string, buffer: Buffer) => new Promise((resolve, reject) => {
+    client.set(key, buffer, (error: Error, reply: any) => {
       if (error) {
         reject(error);
       } else {
@@ -164,5 +164,5 @@ function prefillRedis() {
       reject(error);
     }
   })
-    .then(() => client.end(true));
+    .then(() => client.quit());
 }

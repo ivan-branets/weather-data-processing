@@ -3,8 +3,8 @@ import moment from 'moment';
 import _ from 'lodash';
 import axios from 'axios';
 import mysql from 'mysql';
-import redis from 'redis';
 import zlib from 'zlib';
+import Redis from 'ioredis';
 import { data } from './hourly.json';
 import { IWeatherItem, Result } from './models';
 
@@ -364,42 +364,37 @@ export class AppService {
     return new Result(data.length, sqlResult, start);
   }
 
-  private readonly client = redis.createClient({
-    host: process.env.REDIS_HOST,
-    return_buffers: true
-  });
+  private readonly client = new Redis(undefined, process.env.REDIS_HOST);
 
   async v10(): Promise<Result> {
     const start = new Date();
 
-    const get = (key: string) => new Promise<string>((resolve, reject) => {
-      this.client.get(key, (error: Error, reply: any) => {
+    const get = (key: string) => new Promise<Buffer>((resolve, reject) => {
+      this.client.getBuffer(key, (error: Error, reply: any) => {
         if (error) {
           reject(error);
         } else {
-          resolve(reply.toString());
+          resolve(reply);
         }
       });
     });
 
-    const gunzip = (compressedString: string) => new Promise<string>((resolve, reject) => {
-      const buffer = Buffer.from(compressedString, 'base64');
-
+    const gunzip = (buffer: Buffer) => new Promise<string>((resolve, reject) => {
       zlib.gunzip(buffer, (error, result) => {
         if (error) {
           reject(error);
         } else {
-          resolve(result.toString('ascii'));
+          resolve(result.toString());
         }
       });
     });
 
-    const compressedString = await get('city-0');
+    const buffer = await get('city-0');
 
     console.log('--------------');
     console.log(new Date().getTime() - start.getTime());
 
-    const value = await gunzip(compressedString);
+    const value = await gunzip(buffer);
     console.log(new Date().getTime() - start.getTime());
 
     const arr = JSON.parse(value);
