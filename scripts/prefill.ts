@@ -1,11 +1,12 @@
 import mysql from 'mysql';
 import Redis from 'ioredis';
 import zlib from 'zlib';
+import _ from 'lodash';
 import { data } from '../src/hourly.json';
 
-prefillRedis()
-  //prefillMySql()
-  //.then(() => prefillRedis())
+Promise.resolve()
+  .then(() => prefillMySql())
+  .then(() => prefillRedis())
   .catch(error => console.error(error))
   .finally(() => console.log('Finished'));
 
@@ -47,15 +48,15 @@ function prefillMySql() {
           USE weather;
 
           CREATE TABLE hourly_statistics (
-            city VARCHAR(50) NOT NULL,
+            city_id VARCHAR(50) NOT NULL,
             time DATETIME NOT NULL,
             temperature FLOAT NOT NULL
           );
 
-          CREATE INDEX city_index ON hourly_statistics(city);
+          CREATE INDEX city_index ON hourly_statistics(city_id);
 
           CREATE TABLE hourly_statistics_no_index (
-            city VARCHAR(50) NOT NULL,
+            city_id VARCHAR(50) NOT NULL,
             time DATETIME NOT NULL,
             temperature FLOAT NOT NULL
           );
@@ -71,13 +72,13 @@ function prefillMySql() {
 
   const insert = (values: string) =>
     new Promise((resolve, reject) => {
-      // INSERT INTO hourly_statistics_no_index (city, time, temperature)
-      // VALUES ${values};
       connection.query(`
           USE weather;
-          INSERT INTO hourly_statistics (city, time, temperature)
+          INSERT INTO hourly_statistics (city_id, time, temperature)
             VALUES ${values};
 
+          INSERT INTO hourly_statistics_no_index (city_id, time, temperature)
+            VALUES ${values};
         `, error => {
         if (error) {
           reject(error);
@@ -91,7 +92,7 @@ function prefillMySql() {
 
     try {
       for (let i = 0; i < 1000; i++) {
-        const values = data.map(({ time, temperature }) => `('city-${i}', '${time}', ${temperature})`)
+        const values = data.map(({ time, temperature }) => `('city-${i}', '${time}', ${temperature + _.random(-5, 5)})`)
           .join(', ');
 
         await insert(values);
@@ -150,7 +151,12 @@ function prefillRedis() {
   return new Promise(async (resolve, reject) => {
     try {
       for (let i = 0; i < 1000; i++) {
-        const value = await gzip(JSON.stringify(data.map(({ time, temperature }) => ({ time, temperature }))));
+        const value = await gzip(
+          JSON.stringify(
+            data.map(({ time, temperature }) => ({ time, temperature: temperature + _.random(-5, 5) }))
+          )
+        );
+
         await set(`city-${i}`, value);
 
         if ((i + 1) % 50 === 0) {

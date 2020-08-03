@@ -1,4 +1,10 @@
 config:
+  payload:
+    path: "city_ids.csv"
+    fields:
+      - "city_id"
+    order: "sequence"
+    skipHeader: true
   target: "http://localhost:3000"
   phases:
     - duration: 1
@@ -7,5 +13,7 @@ scenarios:
   - flow:
     - loop:
       - get:
-          url: "/v6"
+          url: "/v12"
+          qs:
+            cityId: "{{ city_id }}"
       count: 10

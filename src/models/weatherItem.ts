@@ -15,3 +15,8 @@ export interface IWeatherItem {
   pressure?: number;
   condition?: number;
 };
+
+export interface ISimpleWeatherItem {
+  time: string;
+  temperature: number;
+}

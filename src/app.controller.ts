@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Result } from './models';
 
@@ -41,18 +41,23 @@ export class AppController {
     return this.appService.v7();
   }
 
-  @Get('/v8')
-  v8(): Promise<Result> {
-    return this.appService.v8();
-  }
-
   @Get('/v9')
-  v9(): Promise<Result> {
-    return this.appService.v9();
+  v9(@Query('cityId') cityId): Promise<Result> {
+    return this.appService.v9(cityId);
   }
 
   @Get('/v10')
-  v10(): Promise<Result> {
-    return this.appService.v10();
+  v10(@Query('cityId') cityId): Promise<Result> {
+    return this.appService.v10(cityId);
+  }
+
+  @Get('/v11')
+  v11(@Query('cityId') cityId): Promise<Result> {
+    return this.appService.v11(cityId);
+  }
+
+  @Get('/v12')
+  v12(@Query('cityId') cityId): Promise<Result> {
+    return this.appService.v12(cityId);
   }
 }

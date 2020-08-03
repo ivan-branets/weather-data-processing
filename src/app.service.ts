@@ -5,11 +5,46 @@ import axios from 'axios';
 import mysql from 'mysql';
 import zlib from 'zlib';
 import Redis from 'ioredis';
+import NodeCache from 'node-cache';
+import isPortReachable from 'is-port-reachable';
 import { data } from './hourly.json';
-import { IWeatherItem, Result } from './models';
+import { IWeatherItem, Result, ISimpleWeatherItem } from './models';
 
 @Injectable()
 export class AppService {
+  private sqlPool?: mysql.Pool;
+  private redisClient?: Redis.Redis;
+
+  private readonly inMemoryCache = new NodeCache({
+    stdTTL: 120,
+    checkperiod: 140,
+    useClones: false
+  });
+
+  constructor() {
+    isPortReachable(3306, `${process.env.MYSQL_HOST ? process.env.MYSQL_HOST : 'localhost'}`).then((value: boolean) => {
+      if (value) {
+        this.sqlPool = mysql.createPool({
+          host: process.env.DB_HOST,
+          user: 'root',
+          password: 'example',
+          multipleStatements: true,
+          database: 'weather',
+          connectionLimit: 100
+        });
+      } else {
+        console.warn('MySQL is not running. Run Docker container with MySQL and Redis: npm run start:docker. Only needed to run /v9-/v10');
+      }
+    });
+
+    isPortReachable(6379, `${process.env.REDIS_HOST ? process.env.REDIS_HOST : 'localhost'}`).then((value: boolean) => {
+      if (value) {
+        this.redisClient = new Redis(undefined, process.env.REDIS_HOST)
+      } else {
+        console.warn('Redis is not running. Run Docker container with MySQL and Redis: npm run start:docker. Only needed to run /v11-/v12');
+      }
+    });
+  }
 
   // 1. create a new collection, which contains items only with date and temperature
   // 2. group items by date in a list
@@ -305,22 +340,13 @@ export class AppService {
     return new Result(response.data.data.length, meanTemperaturesByDate, start);
   }
 
-  private readonly pool = mysql.createPool({
-    connectionLimit: 1000,
-    host: process.env.DB_HOST,
-    user: 'root',
-    password: 'example',
-    multipleStatements: true,
-    database: 'weather'
-  });
-
-  async v8(): Promise<Result> {
+  async v9(cityId: string): Promise<Result> {
     const start = new Date();
 
     const query = new Promise((resolve, reject) => {
-      this.pool.query(`
+      this.sqlPool.query(`
             SELECT time, temperature FROM hourly_statistics
-              WHERE city='city-0';
+              WHERE city_id='${cityId}';
           `, (error, result) => {
         error ? reject(error) : resolve(result);
       });
@@ -345,15 +371,15 @@ export class AppService {
     return new Result(sqlResult.length, meanTemperaturesByDate, start);
   }
 
-  async v9(): Promise<Result> {
+  async v10(cityId: string): Promise<Result> {
     const start = new Date();
 
     const query = new Promise((resolve, reject) => {
-      this.pool.query(`
+      this.sqlPool.query(`
             SELECT date, AVG(temperature) AS meanTemperature FROM
                 (SELECT DATE_FORMAT(time,'%Y-%m-%d') AS date, temperature
                 FROM hourly_statistics
-                WHERE city='city-0') as t
+                WHERE city_id='${cityId}') as t
               GROUP BY date
           `, (error, result) => {
         error ? reject(error) : resolve(result);
@@ -364,41 +390,13 @@ export class AppService {
     return new Result(data.length, sqlResult, start);
   }
 
-  private readonly client = new Redis(undefined, process.env.REDIS_HOST);
-
-  async v10(): Promise<Result> {
+  async v11(cityId: string): Promise<Result> {
     const start = new Date();
 
-    const get = (key: string) => new Promise<Buffer>((resolve, reject) => {
-      this.client.getBuffer(key, (error: Error, reply: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(reply);
-        }
-      });
-    });
+    const buffer = await this.get(cityId);
+    const uncompressed = await this.gunzip(buffer);
 
-    const gunzip = (buffer: Buffer) => new Promise<string>((resolve, reject) => {
-      zlib.gunzip(buffer, (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result.toString());
-        }
-      });
-    });
-
-    const buffer = await get('city-0');
-
-    console.log('--------------');
-    console.log(new Date().getTime() - start.getTime());
-
-    const value = await gunzip(buffer);
-    console.log(new Date().getTime() - start.getTime());
-
-    const arr = JSON.parse(value);
-    console.log(new Date().getTime() - start.getTime());
+    const arr = JSON.parse(uncompressed);
 
     const groupedByDate: { [day: string]: IWeatherItem[] } =
       _.groupBy(arr, item => item.time.substring(0, 10));
@@ -412,7 +410,29 @@ export class AppService {
           date,
           meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
         }
-      })
+      });
+
+    return new Result(arr.length, meanTemperaturesByDate, start);
+  }
+
+  async v12(cityId: string): Promise<Result> {
+    const start = new Date();
+
+    const arr: ISimpleWeatherItem[] = await this.getInMemoryValue(cityId);
+
+    const groupedByDate: { [day: string]: IWeatherItem[] } =
+      _.groupBy(arr, item => item.time.substring(0, 10));
+
+    const dates = Object.keys(groupedByDate);
+
+    const meanTemperaturesByDate: { date: string, meanTemperature: number }[] =
+      dates.map(date => {
+        const temperaturesInOneDay = groupedByDate[date];
+        return {
+          date,
+          meanTemperature: _.meanBy(temperaturesInOneDay, item => item.temperature)
+        }
+      });
 
     return new Result(arr.length, meanTemperaturesByDate, start);
   }
@@ -421,5 +441,59 @@ export class AppService {
     return new Promise(resolve => {
       setTimeout(resolve, milliseconds);
     });
+  }
+
+  private get = (key: string) => new Promise<Buffer>((resolve, reject) => {
+    this.redisClient.getBuffer(key, (error: Error, reply: any) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(reply);
+      }
+    });
+  });
+
+  private gunzip = (buffer: Buffer) => new Promise<string>((resolve, reject) => {
+    zlib.gunzip(buffer, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result.toString());
+      }
+    });
+  });
+
+  private async getInMemoryValue(cityId: string): Promise<ISimpleWeatherItem[]> {
+    let value: ISimpleWeatherItem[] | undefined | 'PENDING' = this.inMemoryCache.get(cityId);
+
+    if (value && value !== 'PENDING') {
+      return value;
+    }
+
+    if (value === undefined) {
+      this.inMemoryCache.set(cityId, 'PENDING');
+
+      const buffer = await this.get(cityId);
+      const uncompressed = await this.gunzip(buffer);
+
+      value = JSON.parse(uncompressed) as ISimpleWeatherItem[];
+
+      this.inMemoryCache.set(cityId, value);
+      return value;
+    }
+
+    // this value is already requested by someone else
+    if (value === 'PENDING') {
+      return await new Promise(resolve => {
+        const event = (key: string, eventValue: ISimpleWeatherItem[]) => {
+          if (key === cityId) {
+            this.inMemoryCache.removeListener('set', event);
+            resolve(eventValue);
+          }
+        }
+
+        this.inMemoryCache.addListener('set', event);
+      });
+    }
   }
 }
