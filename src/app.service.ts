@@ -342,6 +342,10 @@ export class AppService {
   }
 
   async v9(cityId: string): Promise<Result> {
+    if (!this.sqlPool) {
+      throw new Error('MySQL is not running. Execute npm run start:docker command');
+    }
+
     const start = process.hrtime();
 
     const query = new Promise((resolve, reject) => {
@@ -373,6 +377,10 @@ export class AppService {
   }
 
   async v10(cityId: string): Promise<Result> {
+    if (!this.sqlPool) {
+      throw new Error('MySQL is not running. Execute npm run start:docker command');
+    }
+
     const start = process.hrtime();
 
     const query = new Promise((resolve, reject) => {
@@ -392,6 +400,10 @@ export class AppService {
   }
 
   async v11(cityId: string): Promise<Result> {
+    if (!this.redisClient) {
+      throw new Error('Redis is not running. Execute npm run start:docker command');
+    }
+
     const start = process.hrtime();
 
     const buffer = await this.get(cityId);
@@ -417,6 +429,10 @@ export class AppService {
   }
 
   async v12(cityId: string): Promise<Result> {
+    if (!this.redisClient) {
+      throw new Error('Redis is not running. Execute npm run start:docker command');
+    }
+
     const start = process.hrtime();
 
     const arr: ISimpleWeatherItem[] = await this.getInMemoryValue(cityId);
