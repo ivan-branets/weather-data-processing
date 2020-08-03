@@ -9,6 +9,7 @@ import NodeCache from 'node-cache';
 import isPortReachable from 'is-port-reachable';
 import { data } from './hourly.json';
 import { IWeatherItem, Result, ISimpleWeatherItem } from './models';
+import { hrtimeConverter } from './common';
 
 @Injectable()
 export class AppService {
@@ -50,8 +51,8 @@ export class AppService {
   // 2. group items by date in a list
   // 3. count mean temperature for items with the same date
   v1(): Result {
-    // record start time to know how much time we've spent for data processing    
-    const start = new Date();
+    // record start time to know how much time we've spent for data processing
+    const start = process.hrtime();
 
     // we have a time field '2019-01-01 00:10:00'.
     // to make a grouping by date why need to cut '00:10:00' part, so leave only date.
@@ -105,7 +106,7 @@ export class AppService {
 
   // the same as v1, but avoiding moment()
   v2(): Result {
-    const start = new Date();
+    const start = process.hrtime();
 
     const source = data.map(item => ({
       temperature: item.temperature,
@@ -145,7 +146,7 @@ export class AppService {
 
   // the same as v2, but hashmap instead of list
   v3(): Result {
-    const start = new Date();
+    const start = process.hrtime();
 
     const source = data.map(item => ({
       temperature: item.temperature,
@@ -196,7 +197,7 @@ export class AppService {
 
   // the same as v3, but no element removing in source list
   v4(): Result {
-    const start = new Date();
+    const start = process.hrtime();
 
     const source = data.map(item => ({
       temperature: item.temperature,
@@ -236,7 +237,7 @@ export class AppService {
   // it is redundant now
   // let get items from original data collection
   v5(): Result {
-    const start = new Date();
+    const start = process.hrtime();
 
     // was:
     // const source = data.map(item => ({
@@ -280,7 +281,7 @@ export class AppService {
 
   // the same as v5, but grouping and mean is done by lodash library
   v6(): Result {
-    const start = new Date();
+    const start = process.hrtime();
 
     // was:
     // const groupedByDate: { [date: string]: IWeatherItem[] } = {};
@@ -288,7 +289,7 @@ export class AppService {
     // data.forEach(item => {
     //   const date = item.time.substring(0, 10);
 
-    //   groupedByDate[date] = groupedByDate[date] || []; 
+    //   groupedByDate[date] = groupedByDate[date] || [];
     //   groupedByDate[date].push(item);
     // })
 
@@ -312,7 +313,7 @@ export class AppService {
   }
 
   async v7(): Promise<Result> {
-    const start = new Date();
+    const start = process.hrtime();
     const response = await axios.get('https://weather-dou.azureedge.net/weather/hourly.json', {
       headers: {
         'Accept-Encoding': 'gzip'
@@ -320,7 +321,7 @@ export class AppService {
     });
 
     // mimic slow connection (800ms)
-    const responseTime = new Date().getTime() - start.getTime();
+    const responseTime = hrtimeConverter(process.hrtime(start)).milliseconds;
     await this.timeout(responseTime < 800 ? 800 - responseTime : 0);
 
     const groupedByDate: { [day: string]: IWeatherItem[] } =
@@ -341,7 +342,7 @@ export class AppService {
   }
 
   async v9(cityId: string): Promise<Result> {
-    const start = new Date();
+    const start = process.hrtime();
 
     const query = new Promise((resolve, reject) => {
       this.sqlPool.query(`
@@ -372,7 +373,7 @@ export class AppService {
   }
 
   async v10(cityId: string): Promise<Result> {
-    const start = new Date();
+    const start = process.hrtime();
 
     const query = new Promise((resolve, reject) => {
       this.sqlPool.query(`
@@ -391,7 +392,7 @@ export class AppService {
   }
 
   async v11(cityId: string): Promise<Result> {
-    const start = new Date();
+    const start = process.hrtime();
 
     const buffer = await this.get(cityId);
     const uncompressed = await this.gunzip(buffer);
@@ -416,7 +417,7 @@ export class AppService {
   }
 
   async v12(cityId: string): Promise<Result> {
-    const start = new Date();
+    const start = process.hrtime();
 
     const arr: ISimpleWeatherItem[] = await this.getInMemoryValue(cityId);
 
